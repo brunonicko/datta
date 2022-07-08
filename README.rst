@@ -24,3 +24,12 @@ Datta
 Overview
 --------
 `Datta` is a simple implementation of Slotted Data Classes compatible with Python 2.7 and 3.7+.
+
+.. code:: python
+
+    >>> from datta import Data, Field
+    >>> class Point(Data):
+    ...     x = Field(int)
+    ...     y = Field(int)
+    ...
+    >>> point = Point(3, 4)
