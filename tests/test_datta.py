@@ -27,6 +27,7 @@ def test_fields():
     assert list(C.__fields__.items()) == [("x", A.__fields__["x"]), ("y", B.__fields__["y"]), ("z", C.__fields__["z"])]
 
     with pytest.raises(TypeError):
+
         class D(C):
             x = 0
 
@@ -44,6 +45,9 @@ def test_constants():
 
     circle = Circle(3.0)
     assert circle.circumference == 18.84
+
+    with pytest.raises(AttributeError):
+        Circle.PI = 5
 
     with pytest.raises(AttributeError):
         circle.PI = 5

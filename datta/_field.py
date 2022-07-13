@@ -10,10 +10,10 @@ if TYPE_CHECKING:
 __all__ = ["Field"]
 
 
-T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
 
 
-class Field(Generic[T]):
+class Field(Generic[T_co]):
     __slots__ = (
         "__order",
         "__default",
@@ -28,9 +28,9 @@ class Field(Generic[T]):
 
     def __init__(
         self,
-        types=(),  # type: tuple[Type[T], ...] | Type[T]
-        default=MISSING,  # type: T | MissingType
-        default_factory=MISSING,  # type: Callable[..., T] | MissingType
+        types=(),  # type: tuple[Type[T_co], ...] | Type[T_co]
+        default=MISSING,  # type: T_co | MissingType
+        default_factory=MISSING,  # type: Callable[..., T_co] | MissingType
         init=True,  # type: bool
         eq=True,  # type: bool
         repr=True,  # type: bool
@@ -58,11 +58,11 @@ class Field(Generic[T]):
         self.__default_factory = default_factory
 
     def __get__(self, instance, owner):
-        # type: (...) -> T
-        return cast(T, NotImplemented)
+        # type: (...) -> T_co
+        return cast(T_co, NotImplemented)
 
     def get_default(self):
-        # type: () -> T
+        # type: () -> T_co
         if self.__default is not MISSING:
             return self.__default
         if self.__default_factory is not MISSING:
@@ -77,12 +77,12 @@ class Field(Generic[T]):
 
     @property
     def default(self):
-        # type: () -> T | MissingType
+        # type: () -> T_co | MissingType
         return self.__default
 
     @property
     def default_factory(self):
-        # type: () -> T | Callable[..., T] | MissingType
+        # type: () -> T_co | Callable[..., T_co] | MissingType
         return self.__default_factory
 
     @property
@@ -102,7 +102,7 @@ class Field(Generic[T]):
 
     @property
     def types(self):
-        # type: () -> tuple[Type[T], ...] | Type[T]
+        # type: () -> tuple[Type[T_co], ...] | Type[T_co]
         return self.__types
 
     @property
