@@ -21,7 +21,7 @@ class Constant(Generic[T]):
 
     def __get__(self, instance, owner):
         # type: (...) -> T
-        return cast(T, self)
+        return self.__value
 
     @property
     def value(self):

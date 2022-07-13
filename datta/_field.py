@@ -59,7 +59,7 @@ class Field(Generic[T]):
 
     def __get__(self, instance, owner):
         # type: (...) -> T
-        return cast(T, self)
+        return cast(T, NotImplemented)
 
     def get_default(self):
         # type: () -> T

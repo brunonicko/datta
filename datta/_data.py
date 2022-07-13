@@ -3,27 +3,32 @@ from __future__ import absolute_import, division, print_function
 import collections
 import copy
 import inspect
+import types
 
 import six
 from basicco import mapping_proxy, scrape_class, mangling
-from tippo import TYPE_CHECKING
+from tippo import TYPE_CHECKING, cast
 
 from ._field import Field
 from ._constant import Constant
 from ._sentinels import DELETE
 
 if TYPE_CHECKING:
-    from tippo import Any
+    from tippo import Any, Type
 
 __all__ = ["DataMeta", "Data", "evolve", "fields", "constants"]
 
 
-class FieldScraper(object):
-    __slots__ = ("__cls", "__field_order")
+_READ_ONLY_ATTRS = {"__fields__", "__constants__", "__kwargs__", "__slots__"}
 
-    def __init__(self, cls, cls_fields):
-        # type: (DataMeta, dict[str, Field]) -> None
+
+class FieldScraper(object):
+    __slots__ = ("__cls", "__cls_fields", "__field_order")
+
+    def __init__(self, cls, cls_fields=None):
+        # type: (DataMeta, dict[str, Field] | None) -> None
         self.__cls = cls  # type: DataMeta
+        self.__cls_fields = cls_fields  # type: dict[str, Field] | None
         self.__field_order = {}  # type: dict[str, int]
 
     def scrape(self):
@@ -35,8 +40,9 @@ class FieldScraper(object):
         # Scrape class for fields.
         cls_fields = scrape_class.scrape_class(
             self.__cls,
-            self.__member_filter,
-            self.__override_filter,
+            member_filter=self.__member_filter,  # type: ignore
+            override_filter=self.__override_filter,  # type: ignore
+            member_replacer=self.__field_replacer,  # type: ignore
         )  # type: dict[str, Field]
 
         # Order fields.
@@ -46,31 +52,33 @@ class FieldScraper(object):
 
         return mapping_proxy.MappingProxyType(ordered_fields)
 
-    def __member_filter(self, base, member_name, member):
-        # type: (DataMeta, str, Any) -> bool
+    def __get_field(self, cls, name):
+        # type: (DataMeta, str) -> Field | None
+        if self.__cls_fields is not None and cls is self.__cls:
+            return self.__cls_fields.get(name)
+        else:
+            return cls.__fields__.get(name)
+
+    def __member_filter(self, base, member_name, _member):
+        # type: (Type, str, Any) -> bool
+        assert member_name not in self.__field_order
 
         # Skip non-data base classes.
         if not isinstance(base, DataMeta):
-            self.__field_order.pop(member_name)
             return False
 
         # Get field from data class.
-        if isinstance(member, Field):
-            if not isinstance(base, DataMeta):
-                return False
-
-            # Remember the order, this is the first time seeing this field.
-            assert member_name not in self.__field_order
-            self.__field_order[member_name] = member.order
-
+        field = self.__get_field(cast(DataMeta, base), member_name)  # type: Field | None
+        if field is not None:
+            self.__field_order[member_name] = field.order
             return True
 
-        self.__field_order.pop(member_name)
         return False
 
-    @staticmethod
-    def __override_filter(base, member_name, member, previous_member):
-        # type: (DataMeta, str, Any, Any) -> bool
+    def __override_filter(self, base, member_name, member, previous_member):
+        # type: (Type, str, Any, Any) -> bool
+
+        # Can't override fields if non-data class.
         if not isinstance(base, DataMeta):
             error = "non-data {!r} base overrides {} {!r}".format(
                 base.__name__,
@@ -79,7 +87,9 @@ class FieldScraper(object):
             )
             raise TypeError(error)
 
-        if not isinstance(member, Field):
+        # Can't override fields with non-fields.
+        field = self.__get_field(cast(DataMeta, base), member_name)  # type: Field | None
+        if field is None:
             error = "{!r} base overrides {} {!r} with a {!r} object".format(
                 base.__name__,
                 type(previous_member).__name__.lower(),
@@ -88,7 +98,85 @@ class FieldScraper(object):
             )
             raise TypeError(error)
 
+        # TODO: liskov check
         return True
+
+    def __field_replacer(self, base, member_name, _member):
+        # type: (DataMeta, str, types.MemberDescriptorType) -> Field
+        field = self.__get_field(base, member_name)
+        assert field is not None
+        return field
+
+
+class ConstantScraper(object):
+    __slots__ = ("__cls", "__cls_constants")
+
+    def __init__(self, cls, cls_constants=None):
+        # type: (DataMeta, dict[str, Constant] | None) -> None
+        self.__cls = cls  # type: DataMeta
+        self.__cls_constants = cls_constants  # type: dict[str, Constant] | None
+
+    def scrape(self):
+        # type: () -> mapping_proxy.MappingProxyType[str, Constant]
+
+        # Scrape class for constants.
+        cls_constants = scrape_class.scrape_class(
+            self.__cls,
+            member_filter=self.__member_filter,  # type: ignore
+            override_filter=self.__override_filter,  # type: ignore
+            member_replacer=self.__constant_replacer,  # type: ignore
+        )  # type: dict[str, Constant]
+        return mapping_proxy.MappingProxyType(cls_constants)
+
+    def __get_constant(self, cls, name):
+        # type: (DataMeta, str) -> Constant | None
+        if self.__cls_constants is not None and cls is self.__cls:
+            return self.__cls_constants.get(name)
+        else:
+            return cls.__constants__.get(name)
+
+    def __member_filter(self, base, member_name, _member):
+        # type: (Type, str, Any) -> bool
+
+        # Skip non-data base classes.
+        if not isinstance(base, DataMeta):
+            return False
+
+        # Get constant from data class.
+        constant = self.__get_constant(cast(DataMeta, base), member_name)  # type: Constant | None
+        return constant is not None
+
+    def __override_filter(self, base, member_name, member, previous_member):
+        # type: (Type, str, Any, Any) -> bool
+
+        # Can't override constants if non-data class.
+        if not isinstance(base, DataMeta):
+            error = "non-data {!r} base overrides {} {!r}".format(
+                base.__name__,
+                type(previous_member).__name__.lower(),
+                member_name,
+            )
+            raise TypeError(error)
+
+        # Can't override constants with non-constants.
+        constant = self.__get_constant(cast(DataMeta, base), member_name)  # type: Constant | None
+        if constant is None:
+            error = "{!r} base overrides {} {!r} with a {!r} object".format(
+                base.__name__,
+                type(previous_member).__name__.lower(),
+                member_name,
+                type(member).__name__,
+            )
+            raise TypeError(error)
+
+        # TODO: liskov check
+        return True
+
+    def __constant_replacer(self, base, member_name, _member):
+        # type: (DataMeta, str, types.MemberDescriptorType) -> Constant
+        constant = self.__get_constant(base, member_name)
+        assert constant is not None
+        return constant
 
 
 class DataMeta(type):
@@ -101,110 +189,29 @@ class DataMeta(type):
         # Merge kwargs and store them in the class.
         dct["__kwargs__"] = kwargs.update(dct.get("__kwargs__", {}))
 
-        # Gather constants for this class and convert them to values.
-        this_constants = {n: dct.pop(c) for n, c in list(dct.items()) if isinstance(c, Constant)}
-        __constants__ = {}
-        dct["__constants__"] = mapping_proxy.MappingProxyType(__constants__)
-
-        dct.update((n, c.value) for n, c in this_constants.items())
-
         # Gather fields for this class and convert them to slots.
         this_fields = {n: dct.pop(n) for n, f in list(dct.items()) if isinstance(f, Field)}
-        __fields__ = collections.OrderedDict()
-        dct["__fields__"] = mapping_proxy.MappingProxyType(__fields__)
-
-        sorted_slots = tuple(_unmangle(n, name) for n, f in sorted(this_fields.items(), key=lambda i: i[1].order))
+        sorted_slots = tuple(
+            mangling.unmangle(n, name) for n, f in sorted(this_fields.items(), key=lambda i: i[1].order)
+        )
         dct["__slots__"] = tuple(dct.get("__slots__", ())) + sorted_slots
+        dct["__fields__"] = None
+
+        # Gather constants for this class and convert them to class attributes.
+        this_constants = {n: c.value for n, c in dct.items() if isinstance(c, Constant)}
+        dct.update(this_constants)
+        dct["__constants__"] = None
 
         # Build class.
         cls = super(DataMeta, mcs).__new__(mcs, name, bases, dct, **kwargs)
 
-        # Gather fields and constants from bases.
-        all_constants = {}
-        all_fields = {}
-        field_order = {}
-        for base in inspect.getmro(cls)[::-1][1:]:
-            is_data = isinstance(base, DataMeta)
+        # Scrape fields.
+        all_fields = FieldScraper(cls, this_fields).scrape()
+        type.__setattr__(cls, "__fields__", all_fields)
 
-            # Can't have non-slotted class in the chain.
-            if not is_data and "__dict__" in base.__dict__:
-                error = "unsupported non-slotted base class {!r}".format(base.__name__)
-                raise TypeError(error)
-
-            # For each member defined in the class.
-            for member_name, member in base.__dict__.items():
-
-                # Base is data, redirect members.
-                if is_data:
-                    if base is cls:
-                        base_fields = this_fields
-                        base_constants = this_constants
-                    else:
-                        base_fields = getattr(base, "__fields__")
-                        base_constants = getattr(base, "__constants__")
-
-                    is_field = member_name in base_fields
-                    if is_field:
-                        member = base_fields[member_name]
-
-                    is_constant = member_name in base_constants
-                    if is_constant:
-                        member = base_constants[member_name]
-                else:
-                    is_field = isinstance(member, Field)
-                    is_constant = isinstance(member, Constant)
-
-                # Member is not a field.
-                if not is_field:
-
-                    # Can't override field with non-field.
-                    if member_name in all_fields:
-                        error = "class {!r} overrides field {!r} with non-field".format(base.__name__, member_name)
-                        raise TypeError(error)
-
-                else:
-
-                    # Base is not data.
-                    if not is_data:
-
-                        # Can't override any field.
-                        if member_name in all_fields:
-                            error = "non-data class {!r} overrides field {!r}".format(base.__name__, member_name)
-                            raise TypeError(error)
-
-                    # Remember order only if it's the first time we are seeing this field.
-                    if member_name not in field_order:
-                        field_order[member_name] = member.order
-
-                    # Remember field.
-                    all_fields[member_name] = member
-
-                # Member is not a constant.
-                if not is_constant:
-
-                    # Can't override constant with non-constant.
-                    if member_name in all_constants:
-                        error = "class {!r} overrides constant {!r} with non-constant".format(
-                            base.__name__, member_name
-                        )
-                        raise TypeError(error)
-
-                else:
-
-                    # Base is not data.
-                    if not is_data:
-
-                        # Can't override any constant.
-                        if member_name in all_constants:
-                            error = "non-data class {!r} overrides constant {!r}".format(base.__name__, member_name)
-                            raise TypeError(error)
-
-                    # Remember constant.
-                    all_constants[member_name] = member
-
-        # Store fields according to their original order, store constants.
-        __fields__.update((n, f) for n, f in sorted(all_fields.items(), key=lambda i: field_order[i[0]]))
-        __constants__.update(all_constants)
+        # Scrape constants.
+        all_constants = ConstantScraper(cls, this_constants).scrape()
+        type.__setattr__(cls, "__constants__", all_constants)
 
         return cls
 
@@ -223,6 +230,9 @@ class DataMeta(type):
 
 class Data(six.with_metaclass(DataMeta, object)):
     __slots__ = ("__hash",)
+    __constants__ = {}  # type: dict[str, Constant]
+    __fields__ = {}  # type: dict[str, Field]
+    __kwargs__ = {}  # type: dict[str, object]
 
     def __init_subclass__(cls, **kwargs):
         pass
