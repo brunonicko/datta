@@ -5,24 +5,90 @@ import copy
 import inspect
 
 import six
-from basicco import mapping_proxy
+from basicco import mapping_proxy, scrape_class, mangling
+from tippo import TYPE_CHECKING
 
 from ._field import Field
 from ._constant import Constant
 from ._sentinels import DELETE
 
+if TYPE_CHECKING:
+    from tippo import Any
+
 __all__ = ["DataMeta", "Data", "evolve", "fields", "constants"]
 
 
-_PROTECTED_ATTRS = {"__fields__", "__constants__"}
-_READ_ONLY_ATTRS = _PROTECTED_ATTRS.union({"__kwargs__", "__slots__"})
+class FieldScraper(object):
+    __slots__ = ("__cls", "__field_order")
 
+    def __init__(self, cls, cls_fields):
+        # type: (DataMeta, dict[str, Field]) -> None
+        self.__cls = cls  # type: DataMeta
+        self.__field_order = {}  # type: dict[str, int]
 
-def _unmangle(name, cls_name):
-    prefix = "_{}".format(cls_name.lstrip("_"))
-    if name.startswith("{}__".format(prefix)):
-        return name[len(prefix) :]
-    return name
+    def scrape(self):
+        # type: () -> mapping_proxy.MappingProxyType[str, Field]
+
+        # Reset field order.
+        self.__field_order = {}
+
+        # Scrape class for fields.
+        cls_fields = scrape_class.scrape_class(
+            self.__cls,
+            self.__member_filter,
+            self.__override_filter,
+        )  # type: dict[str, Field]
+
+        # Order fields.
+        ordered_fields = collections.OrderedDict()
+        for field_name, field in sorted(cls_fields.items(), key=lambda i: self.__field_order[i[0]]):
+            ordered_fields[field_name] = field
+
+        return mapping_proxy.MappingProxyType(ordered_fields)
+
+    def __member_filter(self, base, member_name, member):
+        # type: (DataMeta, str, Any) -> bool
+
+        # Skip non-data base classes.
+        if not isinstance(base, DataMeta):
+            self.__field_order.pop(member_name)
+            return False
+
+        # Get field from data class.
+        if isinstance(member, Field):
+            if not isinstance(base, DataMeta):
+                return False
+
+            # Remember the order, this is the first time seeing this field.
+            assert member_name not in self.__field_order
+            self.__field_order[member_name] = member.order
+
+            return True
+
+        self.__field_order.pop(member_name)
+        return False
+
+    @staticmethod
+    def __override_filter(base, member_name, member, previous_member):
+        # type: (DataMeta, str, Any, Any) -> bool
+        if not isinstance(base, DataMeta):
+            error = "non-data {!r} base overrides {} {!r}".format(
+                base.__name__,
+                type(previous_member).__name__.lower(),
+                member_name,
+            )
+            raise TypeError(error)
+
+        if not isinstance(member, Field):
+            error = "{!r} base overrides {} {!r} with a {!r} object".format(
+                base.__name__,
+                type(previous_member).__name__.lower(),
+                member_name,
+                type(member).__name__,
+            )
+            raise TypeError(error)
+
+        return True
 
 
 class DataMeta(type):
@@ -31,12 +97,6 @@ class DataMeta(type):
     __kwargs__ = {}  # type: dict[str, object]
 
     def __new__(mcs, name, bases, dct, **kwargs):
-
-        # Prevent protected attributes from being declared.
-        for protected_attr in _PROTECTED_ATTRS:
-            if protected_attr in dct:
-                error = "can't declare {}.{} manually".format(name, protected_attr)
-                raise TypeError(error)
 
         # Merge kwargs and store them in the class.
         dct["__kwargs__"] = kwargs.update(dct.get("__kwargs__", {}))
