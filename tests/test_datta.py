@@ -2,7 +2,26 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
-from datta import Data, Field, Constant
+from datta import DataKwargs, Data, Field, Constant, evolve
+
+
+def test_force_slots():
+    class NonSlotted(object):
+        pass
+
+    class Derived(NonSlotted):
+        __slots__ = ()
+
+    class Point(Data):
+        x = Field()
+        y = Field()
+
+    with pytest.raises(TypeError):
+
+        class Vector(Point, Derived):
+            pass
+
+        assert not Vector
 
 
 def test_datta():
@@ -36,6 +55,8 @@ def test_fields():
 
 def test_constants():
     class Circle(Data):
+        __kwargs__ = DataKwargs(mutable=True)
+
         PI = Constant(3.14)
         radius = Field(float)
 
@@ -51,6 +72,41 @@ def test_constants():
 
     with pytest.raises(AttributeError):
         circle.PI = 5
+
+
+def test_mutable():
+    class Point(Data):
+        x = Field()
+        y = Field()
+
+    point = Point(3, 4)
+    with pytest.raises(AttributeError):
+        point.x = 30
+
+    new_point = evolve(point, x=30)
+    assert isinstance(new_point, Point)
+    assert new_point.x == 30
+    assert point.x == 3
+
+    class MutablePoint(Point):
+        __kwargs__ = DataKwargs(mutable=True)
+        x = Field()
+        y = Field()
+
+    mutable_point = MutablePoint(3, 4)
+    mutable_point.x = 30
+    assert mutable_point.x == 30
+
+
+def test_type_checking():
+    class Point(Data):
+        x = Field(int)
+        y = Field(int)
+
+    point = Point(3, 4)
+
+    with pytest.raises(TypeError):
+        evolve(point, x=3.0)
 
 
 if __name__ == "__main__":

@@ -6,8 +6,8 @@ import inspect
 import types
 
 import six
-from basicco import mapping_proxy, scrape_class, mangling
-from tippo import TYPE_CHECKING, cast
+from basicco import mapping_proxy, scrape_class, mangling, type_checking
+from tippo import TYPE_CHECKING, TypedDict, cast
 
 from ._field import Field
 from ._constant import Constant
@@ -16,19 +16,24 @@ from ._sentinels import DELETE
 if TYPE_CHECKING:
     from tippo import Any, Type
 
-__all__ = ["DataMeta", "Data", "evolve", "fields", "constants"]
+__all__ = ["DataKwargs", "FieldScraper", "ConstantScraper", "DataMeta", "Data", "evolve", "fields", "constants"]
 
 
 _READ_ONLY_ATTRS = {"__fields__", "__constants__", "__kwargs__", "__slots__"}
 
 
+DataKwargs = TypedDict("DataKwargs", {"mutable": bool, "unchecked": bool}, total=False)
+
+
 class FieldScraper(object):
+    """Scrapes all fields in a Data class."""
+
     __slots__ = ("__cls", "__cls_fields", "__field_order")
 
-    def __init__(self, cls, cls_fields=None):
+    def __init__(self, cls, _cls_fields=None):
         # type: (DataMeta, dict[str, Field] | None) -> None
         self.__cls = cls  # type: DataMeta
-        self.__cls_fields = cls_fields  # type: dict[str, Field] | None
+        self.__cls_fields = _cls_fields  # type: dict[str, Field] | None
         self.__field_order = {}  # type: dict[str, int]
 
     def scrape(self):
@@ -111,10 +116,10 @@ class FieldScraper(object):
 class ConstantScraper(object):
     __slots__ = ("__cls", "__cls_constants")
 
-    def __init__(self, cls, cls_constants=None):
+    def __init__(self, cls, _cls_constants=None):
         # type: (DataMeta, dict[str, Constant] | None) -> None
         self.__cls = cls  # type: DataMeta
-        self.__cls_constants = cls_constants  # type: dict[str, Constant] | None
+        self.__cls_constants = _cls_constants  # type: dict[str, Constant] | None
 
     def scrape(self):
         # type: () -> mapping_proxy.MappingProxyType[str, Constant]
@@ -182,12 +187,14 @@ class ConstantScraper(object):
 class DataMeta(type):
     __constants__ = {}  # type: dict[str, Constant]
     __fields__ = {}  # type: dict[str, Field]
-    __kwargs__ = {}  # type: dict[str, object]
+    __kwargs__ = {}  # type: DataKwargs
 
     def __new__(mcs, name, bases, dct, **kwargs):
 
         # Merge kwargs and store them in the class.
-        dct["__kwargs__"] = kwargs.update(dct.get("__kwargs__", {}))
+        kwargs.pop("metaclass", None)
+        kwargs.update(dct.get("__kwargs__", {}))
+        dct["__kwargs__"] = mapping_proxy.MappingProxyType(kwargs)
 
         # Gather fields for this class and convert them to slots.
         this_fields = {n: dct.pop(n) for n, f in list(dct.items()) if isinstance(f, Field)}
@@ -204,6 +211,14 @@ class DataMeta(type):
 
         # Build class.
         cls = super(DataMeta, mcs).__new__(mcs, name, bases, dct, **kwargs)
+
+        # Make sure all bases have slots.
+        for base in reversed(inspect.getmro(cls)):
+            if base is object:
+                continue
+            if isinstance(base.__dict__.get("__dict__"), types.GetSetDescriptorType):
+                error = "base {!r} does not define '__slots__'".format(base.__name__)
+                raise TypeError(error)
 
         # Scrape fields.
         all_fields = FieldScraper(cls, this_fields).scrape()
@@ -232,16 +247,16 @@ class Data(six.with_metaclass(DataMeta, object)):
     __slots__ = ("__hash",)
     __constants__ = {}  # type: dict[str, Constant]
     __fields__ = {}  # type: dict[str, Field]
-    __kwargs__ = {}  # type: dict[str, object]
+    __kwargs__ = {}  # type: DataKwargs
 
     def __init_subclass__(cls, **kwargs):
         pass
 
     def __init__(self, *args, **kwargs):  # TODO
         for (field_name, field), value in zip(self.__fields__.items(), args):
-            object.__setattr__(self, field_name, value)
+            self.__setfield__(field_name, value)
         for field_name, value in kwargs.items():
-            object.__setattr__(self, field_name, value)
+            self.__setfield__(field_name, value)
 
     def __repr__(self):
         repr_args = []
@@ -314,26 +329,44 @@ class Data(six.with_metaclass(DataMeta, object)):
                 continue
             yield field_name, value
 
-    def __setattr__(self, name, value):
-        field = self.__fields__.get(name)
-        if field is not None:
-            pass
+    def __setfield__(self, name, value):
+        field = self.__fields__[name]
+        if field.types and not self.__kwargs__.get("unchecked", False):
+            type_checking.assert_is_instance(value, field.types)
         super(Data, self).__setattr__(name, value)
 
-    def __delattr__(self, name):
+    def __delfield__(self, name):
+        # field = self.__fields__[name]
+        super(Data, self).__delattr__(name)
+
+    def __setattr__(self, name, value):
+        if not self.__kwargs__.get("mutable", False):
+            error = "{!r} objects are immutable".format(type(self).__name__)
+            raise AttributeError(error)
         field = self.__fields__.get(name)
         if field is not None:
-            pass
-        super(Data, self).__delattr__(name)
+            self.__setfield__(name, value)
+        else:
+            super(Data, self).__setattr__(name, value)
+
+    def __delattr__(self, name):
+        if not self.__kwargs__.get("mutable", False):
+            error = "{!r} objects are immutable".format(type(self).__name__)
+            raise AttributeError(error)
+        field = self.__fields__.get(name)
+        if field is not None:
+            self.__delfield__(name)
+        else:
+            super(Data, self).__delattr__(name)
 
 
 def evolve(data, **updates):
     data_copy = copy.copy(data)
     for field_name, value in updates.items():
         if value is DELETE:
-            delattr(data_copy, field_name)
+            data_copy.__delfield__(field_name)
         else:
-            setattr(data_copy, field_name, value)
+            data_copy.__setfield__(field_name, value)
     return data_copy
 
 

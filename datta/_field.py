@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from basicco import type_checking
 from tippo import TYPE_CHECKING, Generic, TypeVar, cast
 
 from ._sentinels import MissingType, MISSING
@@ -28,7 +29,7 @@ class Field(Generic[T_co]):
 
     def __init__(
         self,
-        types=(),  # type: tuple[Type[T_co], ...] | Type[T_co]
+        types=(),  # type: tuple[Type[T_co] | Type | str | None, ...] | Type[T_co] | Type | str | None
         default=MISSING,  # type: T_co | MissingType
         default_factory=MISSING,  # type: Callable[..., T_co] | MissingType
         init=True,  # type: bool
@@ -49,7 +50,7 @@ class Field(Generic[T_co]):
 
         # Store attributes.
         self.__order = Field.__counter
-        self.__types = types
+        self.__types = type_checking.format_types(types)  # type: tuple[Type[T_co] | Type | str, ...]
         self.__init = bool(init)
         self.__eq = bool(eq)
         self.__repr = bool(repr)
@@ -102,7 +103,7 @@ class Field(Generic[T_co]):
 
     @property
     def types(self):
-        # type: () -> tuple[Type[T_co], ...] | Type[T_co]
+        # type: () -> tuple[Type[T_co] | Type | str, ...]
         return self.__types
 
     @property

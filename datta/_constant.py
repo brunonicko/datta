@@ -17,8 +17,8 @@ class Constant(Generic[T_co]):
 
     def __init__(self, value, types=()):
         # type: (T_co, tuple[Type[T_co] | Type | str | None, ...] | Type[T_co] | Type | str | None) -> None
-        self.__value = value
-        self.__types = type_checking.format_types(types)
+        self.__value = value  # type: T_co
+        self.__types = type_checking.format_types(types)  # type: tuple[Type[T_co] | Type | str, ...]
 
     def __get__(self, instance, owner):
         # type: (...) -> T_co
