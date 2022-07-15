@@ -6,7 +6,7 @@ import inspect
 import types
 
 import six
-from basicco import mapping_proxy, scrape_class, mangling, type_checking
+from basicco import mapping_proxy, scrape_class, mangling
 from tippo import TYPE_CHECKING, cast
 
 from ._field import Field
@@ -240,6 +240,36 @@ class Data(six.with_metaclass(DataMeta, object)):
     __fields__ = {}  # type: dict[str, Field]
 
     def __init__(self, *args, **kwargs):  # TODO
+        i = 0
+        reached_kwargs = False
+        for field_name, field in self.__fields__.items():
+
+            if not field.init:
+                continue
+
+            if not reached_kwargs:
+                try:
+                    value = args[i]
+                except IndexError:
+                    reached_kwargs = True
+                else:
+                    i += 1
+                    self.__setfield__(field_name, value)
+                    continue
+
+            try:
+                value = kwargs[field_name]
+            except KeyError:
+                if field.has_default:
+                    value = field.get_default()
+                elif field.required:
+                    error = "missing value for required field {!r}".format(field_name)
+                    raise TypeError(error)
+                else:
+                    continue
+
+            self.__setfield__(field_name, value)
+
         for (field_name, field), value in zip(self.__fields__.items(), args):
             self.__setfield__(field_name, value)
         for field_name, value in kwargs.items():
@@ -318,8 +348,8 @@ class Data(six.with_metaclass(DataMeta, object)):
 
     def __setfield__(self, name, value):
         field = self.__fields__[name]
-        if field.types:
-            type_checking.assert_is_instance(value, field.types)
+        value = field.convert(value)
+        field.check(value)
         super(Data, self).__setattr__(name, value)
 
     def __delfield__(self, name):

@@ -1,12 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-from basicco import type_checking
+import six
+from basicco import type_checking, caller_module, import_path
 from tippo import TYPE_CHECKING, Generic, TypeVar, cast
 
 from ._sentinels import MissingType, MISSING
 
 if TYPE_CHECKING:
-    from tippo import Type, Callable
+    from tippo import Any, Type, Callable, Iterable
 
 __all__ = ["Field"]
 
@@ -16,29 +17,43 @@ T_co = TypeVar("T_co", covariant=True)
 
 class Field(Generic[T_co]):
     __slots__ = (
-        "__order",
-        "__types",
         "__default",
+        "__converter",
         "__factory",
+        "__types",
         "__init",
         "__repr",
         "__eq",
         "__hash",
         "__subtypes",
+        "__settable",
+        "__deletable",
+        "__required",
+        "__module",
+        "__builtin_paths",
+        "__metadata",
+        "__order",
         "__has_default",
     )
     __counter = 0
 
     def __init__(
         self,
-        types=(),  # type: tuple[Type[T_co] | Type | str | None, ...] | Type[T_co] | Type | str | None
         default=MISSING,  # type: T_co | MissingType
+        converter=None,  # type: Callable[[Any], T_co] | Type[T_co] | str | None
         factory=MISSING,  # type: Callable[..., T_co] | MissingType
+        types=(),  # type: tuple[Type[T_co] | Type | str | None, ...] | Type[T_co] | Type | str | None
         init=True,  # type: bool
         repr=True,  # type: bool
         eq=True,  # type: bool
         hash=None,  # type: bool | None
         subtypes=True,  # type: bool
+        settable=True,  # type: bool
+        deletable=False,  # type: bool
+        required=True,  # type: bool
+        module=None,  # type: str | None
+        builtin_paths=type_checking.DEFAULT_BUILTIN_PATHS,  # type: Iterable[str]
+        metadata=None,  # type: Any
     ):
         # type: (...) -> None
 
@@ -53,14 +68,21 @@ class Field(Generic[T_co]):
         Field.__counter += 1
 
         # Store attributes.
-        self.__types = type_checking.format_types(types)  # type: tuple[Type[T_co] | Type | str, ...]
         self.__default = default
+        self.__converter = converter
         self.__factory = factory
+        self.__types = type_checking.format_types(types)  # type: tuple[Type[T_co] | Type | str, ...]
         self.__init = bool(init)
         self.__repr = bool(repr)
         self.__eq = bool(eq)
         self.__hash = bool(hash)
         self.__subtypes = bool(subtypes)
+        self.__settable = bool(settable)
+        self.__deletable = bool(deletable)
+        self.__required = bool(required)
+        self.__module = module if module is not None else caller_module.caller_module()
+        self.__builtin_paths = ((self.__module,) if self.__module is not None else ()) + tuple(builtin_paths)
+        self.__metadata = metadata
 
         self.__order = Field.__counter
         self.__has_default = has_default or has_factory
@@ -78,10 +100,25 @@ class Field(Generic[T_co]):
         error = "field has no default"
         raise RuntimeError(error)
 
-    @property
-    def order(self):
-        # type: () -> int
-        return self.__order
+    def convert(self, value):
+        # type: (Any) -> T_co
+        if self.converter is not None:
+            converter = self.converter
+            if isinstance(converter, six.string_types):
+                converter = import_path.import_path(converter, builtin_paths=self.builtin_paths)
+            assert callable(converter)
+            return converter(value)
+        return value
+
+    def check(self, value):
+        # type: (Any) -> None
+        if self.types:
+            type_checking.assert_is_instance(
+                value,
+                self.types,
+                subtypes=self.subtypes,
+                builtin_paths=self.builtin_paths,
+            )
 
     @property
     def default(self):
@@ -89,9 +126,19 @@ class Field(Generic[T_co]):
         return self.__default
 
     @property
+    def converter(self):
+        # type: () -> Callable[[Any], T_co] | str | None
+        return self.__converter
+
+    @property
     def factory(self):
         # type: () -> T_co | Callable[..., T_co] | MissingType
         return self.__factory
+
+    @property
+    def types(self):
+        # type: () -> tuple[Type[T_co] | Type | str, ...]
+        return self.__types
 
     @property
     def init(self):
@@ -109,14 +156,24 @@ class Field(Generic[T_co]):
         return self.__repr
 
     @property
-    def types(self):
-        # type: () -> tuple[Type[T_co] | Type | str, ...]
-        return self.__types
-
-    @property
     def subtypes(self):
         # type: () -> bool
         return self.__subtypes
+
+    @property
+    def module(self):
+        # type: () -> str | None
+        return self.__module
+
+    @property
+    def builtin_paths(self):
+        # type: () -> tuple[str, ...]
+        return self.__builtin_paths
+
+    @property
+    def order(self):
+        # type: () -> int
+        return self.__order
 
     @property
     def has_default(self):

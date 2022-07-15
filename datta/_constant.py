@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from basicco import type_checking
+from basicco import type_checking, caller_module
 from tippo import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
@@ -22,7 +22,11 @@ class Constant(Generic[T_co]):
         self.__subtypes = bool(subtypes)
 
         if self.__types:
-            type_checking.assert_is_instance(value, self.__types, subtypes=subtypes)
+            caller_module_ = caller_module.caller_module()
+            builtin_paths = type_checking.DEFAULT_BUILTIN_PATHS  # type: tuple[str, ...]
+            if caller_module_ is not None:
+                builtin_paths = (caller_module_,) + builtin_paths
+            type_checking.assert_is_instance(value, self.__types, subtypes=subtypes, builtin_paths=builtin_paths)
 
     def __get__(self, instance, owner):
         # type: (...) -> T_co
