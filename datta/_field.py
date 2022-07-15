@@ -17,12 +17,14 @@ T_co = TypeVar("T_co", covariant=True)
 class Field(Generic[T_co]):
     __slots__ = (
         "__order",
-        "__default",
-        "__default_factory",
         "__types",
+        "__default",
+        "__factory",
         "__init",
-        "__eq",
         "__repr",
+        "__eq",
+        "__hash",
+        "__subtypes",
         "__has_default",
     )
     __counter = 0
@@ -31,17 +33,19 @@ class Field(Generic[T_co]):
         self,
         types=(),  # type: tuple[Type[T_co] | Type | str | None, ...] | Type[T_co] | Type | str | None
         default=MISSING,  # type: T_co | MissingType
-        default_factory=MISSING,  # type: Callable[..., T_co] | MissingType
+        factory=MISSING,  # type: Callable[..., T_co] | MissingType
         init=True,  # type: bool
-        eq=True,  # type: bool
         repr=True,  # type: bool
+        eq=True,  # type: bool
+        hash=None,  # type: bool | None
+        subtypes=True,  # type: bool
     ):
         # type: (...) -> None
 
         # Defaults.
         has_default = default is not MISSING
-        has_default_factory = default_factory is not MISSING
-        if has_default and has_default_factory:
+        has_factory = factory is not MISSING
+        if has_default and has_factory:
             error = "can't have both default and default factory"
             raise ValueError(error)
 
@@ -49,14 +53,17 @@ class Field(Generic[T_co]):
         Field.__counter += 1
 
         # Store attributes.
-        self.__order = Field.__counter
         self.__types = type_checking.format_types(types)  # type: tuple[Type[T_co] | Type | str, ...]
-        self.__init = bool(init)
-        self.__eq = bool(eq)
-        self.__repr = bool(repr)
-        self.__has_default = has_default or has_default_factory
         self.__default = default
-        self.__default_factory = default_factory
+        self.__factory = factory
+        self.__init = bool(init)
+        self.__repr = bool(repr)
+        self.__eq = bool(eq)
+        self.__hash = bool(hash)
+        self.__subtypes = bool(subtypes)
+
+        self.__order = Field.__counter
+        self.__has_default = has_default or has_factory
 
     def __get__(self, instance, owner):
         # type: (...) -> T_co
@@ -66,8 +73,8 @@ class Field(Generic[T_co]):
         # type: () -> T_co
         if self.__default is not MISSING:
             return self.__default
-        if self.__default_factory is not MISSING:
-            return self.__default_factory()
+        if self.__factory is not MISSING:
+            return self.__factory()
         error = "field has no default"
         raise RuntimeError(error)
 
@@ -82,9 +89,9 @@ class Field(Generic[T_co]):
         return self.__default
 
     @property
-    def default_factory(self):
+    def factory(self):
         # type: () -> T_co | Callable[..., T_co] | MissingType
-        return self.__default_factory
+        return self.__factory
 
     @property
     def init(self):
@@ -105,6 +112,11 @@ class Field(Generic[T_co]):
     def types(self):
         # type: () -> tuple[Type[T_co] | Type | str, ...]
         return self.__types
+
+    @property
+    def subtypes(self):
+        # type: () -> bool
+        return self.__subtypes
 
     @property
     def has_default(self):

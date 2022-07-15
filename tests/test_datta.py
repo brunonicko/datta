@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
-from datta import DataKwargs, Data, Field, Constant, evolve
+from datta import Data, Field, Constant, evolve
 
 
 def test_force_slots():
@@ -55,8 +55,6 @@ def test_fields():
 
 def test_constants():
     class Circle(Data):
-        __kwargs__ = DataKwargs(mutable=True)
-
         PI = Constant(3.14)
         radius = Field(float)
 
@@ -74,7 +72,7 @@ def test_constants():
         circle.PI = 5
 
 
-def test_mutable():
+def test_evolve():
     class Point(Data):
         x = Field()
         y = Field()
@@ -87,15 +85,6 @@ def test_mutable():
     assert isinstance(new_point, Point)
     assert new_point.x == 30
     assert point.x == 3
-
-    class MutablePoint(Point):
-        __kwargs__ = DataKwargs(mutable=True)
-        x = Field()
-        y = Field()
-
-    mutable_point = MutablePoint(3, 4)
-    mutable_point.x = 30
-    assert mutable_point.x == 30
 
 
 def test_type_checking():

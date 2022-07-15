@@ -7,7 +7,7 @@ import types
 
 import six
 from basicco import mapping_proxy, scrape_class, mangling, type_checking
-from tippo import TYPE_CHECKING, TypedDict, cast
+from tippo import TYPE_CHECKING, cast
 
 from ._field import Field
 from ._constant import Constant
@@ -16,13 +16,10 @@ from ._sentinels import DELETE
 if TYPE_CHECKING:
     from tippo import Any, Type
 
-__all__ = ["DataKwargs", "FieldScraper", "ConstantScraper", "DataMeta", "Data", "evolve", "fields", "constants"]
+__all__ = ["FieldScraper", "ConstantScraper", "DataMeta", "Data", "evolve", "fields", "constants"]
 
 
-_READ_ONLY_ATTRS = {"__fields__", "__constants__", "__kwargs__", "__slots__"}
-
-
-DataKwargs = TypedDict("DataKwargs", {"mutable": bool, "unchecked": bool}, total=False)
+_READ_ONLY_ATTRS = {"__fields__", "__constants__", "__slots__"}
 
 
 class FieldScraper(object):
@@ -187,14 +184,8 @@ class ConstantScraper(object):
 class DataMeta(type):
     __constants__ = {}  # type: dict[str, Constant]
     __fields__ = {}  # type: dict[str, Field]
-    __kwargs__ = {}  # type: DataKwargs
 
     def __new__(mcs, name, bases, dct, **kwargs):
-
-        # Merge kwargs and store them in the class.
-        kwargs.pop("metaclass", None)
-        kwargs.update(dct.get("__kwargs__", {}))
-        dct["__kwargs__"] = mapping_proxy.MappingProxyType(kwargs)
 
         # Gather fields for this class and convert them to slots.
         this_fields = {n: dct.pop(n) for n, f in list(dct.items()) if isinstance(f, Field)}
@@ -247,10 +238,6 @@ class Data(six.with_metaclass(DataMeta, object)):
     __slots__ = ("__hash",)
     __constants__ = {}  # type: dict[str, Constant]
     __fields__ = {}  # type: dict[str, Field]
-    __kwargs__ = {}  # type: DataKwargs
-
-    def __init_subclass__(cls, **kwargs):
-        pass
 
     def __init__(self, *args, **kwargs):  # TODO
         for (field_name, field), value in zip(self.__fields__.items(), args):
@@ -324,14 +311,14 @@ class Data(six.with_metaclass(DataMeta, object)):
     def __iter__(self):
         for field_name in self.__fields__:
             try:
-                value = getattr(self, field_name)
+                value = object.__getattribute__(self, field_name)
             except AttributeError:
                 continue
             yield field_name, value
 
     def __setfield__(self, name, value):
         field = self.__fields__[name]
-        if field.types and not self.__kwargs__.get("unchecked", False):
+        if field.types:
             type_checking.assert_is_instance(value, field.types)
         super(Data, self).__setattr__(name, value)
 
@@ -340,24 +327,16 @@ class Data(six.with_metaclass(DataMeta, object)):
         super(Data, self).__delattr__(name)
 
     def __setattr__(self, name, value):
-        if not self.__kwargs__.get("mutable", False):
+        if name in self.__fields__:
             error = "{!r} objects are immutable".format(type(self).__name__)
             raise AttributeError(error)
-        field = self.__fields__.get(name)
-        if field is not None:
-            self.__setfield__(name, value)
-        else:
-            super(Data, self).__setattr__(name, value)
+        super(Data, self).__setattr__(name, value)
 
     def __delattr__(self, name):
-        if not self.__kwargs__.get("mutable", False):
+        if name in self.__fields__:
             error = "{!r} objects are immutable".format(type(self).__name__)
             raise AttributeError(error)
-        field = self.__fields__.get(name)
-        if field is not None:
-            self.__delfield__(name)
-        else:
-            super(Data, self).__delattr__(name)
+        super(Data, self).__delattr__(name)
 
 
 def evolve(data, **updates):
