@@ -239,7 +239,7 @@ class Data(six.with_metaclass(DataMeta, object)):
     __constants__ = {}  # type: dict[str, Constant]
     __fields__ = {}  # type: dict[str, Field]
 
-    def __init__(self, *args, **kwargs):  # TODO
+    def __init__(self, *args, **kwargs):
         i = 0
         reached_kwargs = False
         for field_name, field in self.__fields__.items():
@@ -264,7 +264,9 @@ class Data(six.with_metaclass(DataMeta, object)):
                     value = field.get_default()
                 elif field.required:
                     error = "missing value for required field {!r}".format(field_name)
-                    raise TypeError(error)
+                    exc = TypeError(error)
+                    six.raise_from(exc, None)
+                    raise exc
                 else:
                     continue
 

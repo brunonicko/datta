@@ -161,6 +161,21 @@ class Field(Generic[T_co]):
         return self.__subtypes
 
     @property
+    def settable(self):
+        # type: () -> bool
+        return self.__settable
+
+    @property
+    def deletable(self):
+        # type: () -> bool
+        return self.__deletable
+
+    @property
+    def required(self):
+        # type: () -> bool
+        return self.__required
+
+    @property
     def module(self):
         # type: () -> str | None
         return self.__module

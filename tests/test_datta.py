@@ -89,8 +89,8 @@ def test_evolve():
 
 def test_type_checking():
     class Point(Data):
-        x = Field(int)
-        y = Field(int)
+        x = Field(types=int)
+        y = Field(types=int)
 
     point = Point(3, 4)
 
