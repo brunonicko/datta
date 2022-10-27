@@ -1,4 +1,6 @@
+basicco>=8,<9
 enum34; python_version < "3.4"
-basicco>=4.3,<5
-tippo>=1,<2
+estruttura>=0.2,<1
 six
+slotted>=4,<5
+tippo>=3,<4
