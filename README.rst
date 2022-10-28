@@ -27,9 +27,9 @@ Overview
 
 .. code:: python
 
-    >>> from datta import Data, Field
+    >>> from datta import Data, attribute
     >>> class Point(Data):
-    ...     x = Field(int)
-    ...     y = Field(int)
+    ...     x = attribute(types=int)
+    ...     y = attribute(types=int)
     ...
     >>> point = Point(3, 4)
