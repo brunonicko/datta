@@ -3,16 +3,16 @@ from __future__ import absolute_import, division, print_function
 import math
 
 import pytest
-from datta import DataClass, data_attribute, data_relationship
+from datta import Data, attribute, getter
 
 
-class Vector(DataClass):
-    x = data_attribute(relationship=data_relationship(float))
-    y = data_attribute(relationship=data_relationship(float))
-    mag = data_attribute()  # type: data_attribute[float]
+class Vector(Data):
+    x = attribute(converter=float)
+    y = attribute(converter=float)
+    mag = attribute()  # type: float
 
-    @mag.getter(x, y)
-    def mag(self):
+    @getter(mag, dependencies=(x, y))
+    def _(self):
         # type: () -> float
         return math.sqrt(self.x ** 2 + self.y ** 2)
 

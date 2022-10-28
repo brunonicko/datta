@@ -1,21 +1,24 @@
 from ._bases import (
+    BaseDataMeta,
+    BaseData,
+    BaseDataCollection,
+)
+from ._data import (
     DataMeta,
     Data,
-    DataCollection,
 )
-from ._class import (
-    DataClassMeta,
-    DataClass,
-)
-from .attribute import data_attribute
-from .relationship import data_relationship
+from ._attribute import attribute, getter, setter, deleter
+from ._relationship import relationship
 
 __all__ = [
+    "BaseDataMeta",
+    "BaseData",
+    "BaseDataCollection",
     "DataMeta",
     "Data",
-    "DataCollection",
-    "DataClassMeta",
-    "DataClass",
-    "data_attribute",
-    "data_relationship",
+    "attribute",
+    "getter",
+    "setter",
+    "deleter",
+    "relationship",
 ]
