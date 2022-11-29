@@ -1,4 +1,6 @@
 enum34; python_version < "3.4"
-basicco>=4.3,<5
-tippo>=1,<2
+basicco>=8,<9
+tippo>=3,<4
+estruttura
+pyrsistent
 six
