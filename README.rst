@@ -43,4 +43,9 @@ Example
 
 .. code:: python
 
-    >>> from datta import BaseData
+    >>> from datta import Data, attribute
+    >>> class Point(Data):
+    ...     x = attribute(types=int)
+    ...     y = attribute(types=int)
+    ...
+    >>> point = Point(3, 4)
