@@ -2,64 +2,50 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
-from datta import Data, Field, Constant, evolve
-
-
-def test_force_slots():
-    class NonSlotted(object):
-        pass
-
-    class Derived(NonSlotted):
-        __slots__ = ()
-
-    class Point(Data):
-        x = Field()
-        y = Field()
-
-    with pytest.raises(TypeError):
-
-        class Vector(Point, Derived):
-            pass
-
-        assert not Vector
+from datta import Data, attribute, exceptions, getter
 
 
 def test_datta():
     class Point(Data):
-        x = Field()
-        y = Field()
+        x = attribute()
+        y = attribute()
 
     point = Point(3, 4)
     assert point == Point(3, 4)
 
 
-def test_fields():
+def test_attributes():
     class A(Data):
-        x = Field()
+        x = attribute()
 
     class B(A):
-        y = Field()
+        y = attribute()
 
     class C(B):
-        z = Field()
+        z = attribute()
 
-    assert list(C.__fields__.items()) == [("x", A.__fields__["x"]), ("y", B.__fields__["y"]), ("z", C.__fields__["z"])]
+    assert list(C.__attribute_map__.items()) == [
+        ("x", A.__attribute_map__["x"]),
+        ("y", B.__attribute_map__["y"]),
+        ("z", C.__attribute_map__["z"]),
+    ]
 
     with pytest.raises(TypeError):
 
         class D(C):
             x = 0
 
-        assert not D
+        assert not D  # type: ignore
 
 
 def test_constants():
     class Circle(Data):
-        PI = Constant(3.14)
-        radius = Field(float)
+        PI = attribute(3.14, constant=True)
+        radius = attribute(types=float)
+        circumference = attribute()
 
-        @property
-        def circumference(self):
+        @getter(circumference, dependencies=(PI, radius))
+        def _(self):
             return 2 * self.PI * self.radius
 
     circle = Circle(3.0)
@@ -74,14 +60,14 @@ def test_constants():
 
 def test_evolve():
     class Point(Data):
-        x = Field()
-        y = Field()
+        x = attribute()
+        y = attribute()
 
     point = Point(3, 4)
     with pytest.raises(AttributeError):
         point.x = 30
 
-    new_point = evolve(point, x=30)
+    new_point = point.set("x", 30)
     assert isinstance(new_point, Point)
     assert new_point.x == 30
     assert point.x == 3
@@ -89,13 +75,13 @@ def test_evolve():
 
 def test_type_checking():
     class Point(Data):
-        x = Field(int)
-        y = Field(int)
+        x = attribute(types=int)
+        y = attribute(types=int)
 
     point = Point(3, 4)
 
-    with pytest.raises(TypeError):
-        evolve(point, x=3.0)
+    with pytest.raises(exceptions.InvalidTypeError):
+        point.set("x", 3.0)
 
 
 if __name__ == "__main__":

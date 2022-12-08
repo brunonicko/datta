@@ -1,5 +1,18 @@
-Datta
-=====
+.. logo_start
+.. raw:: html
+
+   <p align="center">
+     <a href="https://github.com/brunonicko/datta">
+         <picture>
+            <object data="./_static/datta.svg" type="image/png">
+                <source srcset="./docs/source/_static/datta_white.svg" media="(prefers-color-scheme: dark)">
+                <img src="./docs/source/_static/datta.svg" width="60%" alt="datta" />
+            </object>
+         </picture>
+     </a>
+   </p>
+.. logo_end
+
 .. image:: https://github.com/brunonicko/datta/workflows/MyPy/badge.svg
    :target: https://github.com/brunonicko/datta/actions?query=workflow%3AMyPy
 
@@ -25,11 +38,9 @@ Overview
 --------
 `Datta` is a simple implementation of Slotted Data Classes compatible with Python 2.7 and 3.7+.
 
+Example
+-------
+
 .. code:: python
 
-    >>> from datta import Data, Field
-    >>> class Point(Data):
-    ...     x = Field(int)
-    ...     y = Field(int)
-    ...
-    >>> point = Point(3, 4)
+    >>> from datta import BaseData

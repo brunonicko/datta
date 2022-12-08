@@ -1,17 +1,18 @@
-import six
-from estruttura import (
-    BaseStructureMeta,
-    BaseImmutableStructure,
-    BaseUserImmutableStructure,
-    BaseProxyImmutableStructure,
-    BaseProxyUserImmutableStructure,
-    BaseImmutableCollectionStructure,
-    BaseUserImmutableCollectionStructure,
-    BaseProxyImmutableCollectionStructure,
-    BaseProxyUserImmutableCollectionStructure,
-)
 from typing import TypeVar
 
+import six
+from estruttura import (
+    BaseImmutableCollectionStructure,
+    BaseImmutableStructure,
+    BaseProxyImmutableCollectionStructure,
+    BaseProxyImmutableStructure,
+    BaseProxyStructureMeta,
+    BaseProxyUserImmutableCollectionStructure,
+    BaseProxyUserImmutableStructure,
+    BaseStructureMeta,
+    BaseUserImmutableCollectionStructure,
+    BaseUserImmutableStructure,
+)
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
@@ -41,8 +42,12 @@ class BaseData(BasePrivateData, BaseUserImmutableStructure):
 BD = TypeVar("BD", bound=BaseData)  # base data self type
 
 
+class BaseProxyDataMeta(BaseDataMeta, BaseProxyStructureMeta):
+    """Metaclass for :class:`BaseProxyPrivateData`."""
+
+
 # noinspection PyAbstractClass
-class BaseProxyPrivateData(BasePrivateData, BaseProxyImmutableStructure[BPD]):
+class BaseProxyPrivateData(six.with_metaclass(BaseProxyDataMeta, BaseProxyImmutableStructure[BPD], BasePrivateData)):
     """Base proxy private data."""
 
     __slots__ = ()
@@ -71,12 +76,16 @@ class DataCollection(PrivateDataCollection[T_co], BaseUserImmutableCollectionStr
 
     __slots__ = ()
 
+    def _do_clear(self):
+        return type(self)()
+
 
 DC = TypeVar("DC", bound=DataCollection)  # data collection self type
 
 
 # noinspection PyAbstractClass
 class ProxyPrivateDataCollection(
+    BaseProxyPrivateData[PDC],
     BaseProxyImmutableCollectionStructure[PDC, T_co],
     PrivateDataCollection[T_co],
 ):
