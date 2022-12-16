@@ -5,13 +5,8 @@ from ._bases import (
     BaseData,
     BaseDataMeta,
     BasePrivateData,
-    BaseProxyData,
-    BaseProxyDataMeta,
-    BaseProxyPrivateData,
     DataCollection,
     PrivateDataCollection,
-    ProxyDataCollection,
-    ProxyPrivateDataCollection,
 )
 from ._constants import (
     BASIC_TYPES,
@@ -22,15 +17,8 @@ from ._constants import (
     DeletedType,
     MissingType,
 )
-from ._data import (
-    Data,
-    DataMeta,
-    PrivateData,
-    ProxyData,
-    ProxyDataMeta,
-    ProxyPrivateData,
-)
-from ._dict import DictData, PrivateDictData, ProxyDictData, ProxyPrivateDictData
+from ._data import Data, DataMeta, PrivateData
+from ._dict import DictData, PrivateDictData
 from ._helpers import (
     attribute,
     dict_attribute,
@@ -40,9 +28,9 @@ from ._helpers import (
     set_attribute,
     set_cls,
 )
-from ._list import ListData, PrivateListData, ProxyListData, ProxyPrivateListData
+from ._list import ListData, PrivateListData
 from ._relationship import Relationship
-from ._set import PrivateSetData, ProxyPrivateSetData, ProxySetData, SetData
+from ._set import PrivateSetData, SetData
 
 __all__ = [
     "getter",
@@ -51,25 +39,14 @@ __all__ = [
     "BaseDataMeta",
     "BasePrivateData",
     "BaseData",
-    "BaseProxyDataMeta",
-    "BaseProxyPrivateData",
-    "BaseProxyData",
     "PrivateDataCollection",
     "DataCollection",
-    "ProxyPrivateDataCollection",
-    "ProxyDataCollection",
     "PrivateDictData",
     "DictData",
-    "ProxyPrivateDictData",
-    "ProxyDictData",
     "PrivateListData",
     "ListData",
-    "ProxyPrivateListData",
-    "ProxyListData",
     "PrivateSetData",
     "SetData",
-    "ProxyPrivateSetData",
-    "ProxySetData",
     "dict_cls",
     "list_cls",
     "set_cls",
@@ -89,7 +66,4 @@ __all__ = [
     "DataMeta",
     "PrivateData",
     "Data",
-    "ProxyDataMeta",
-    "ProxyPrivateData",
-    "ProxyData",
 ]

@@ -1,5 +1,4 @@
 import estruttura
-from basicco import caller_module
 from basicco.namespace import Namespace
 from tippo import Any, Callable, Iterable, Mapping, Type, TypeVar, cast
 
@@ -16,6 +15,7 @@ KT = TypeVar("KT")
 VT = TypeVar("VT")
 
 
+@estruttura.auto_caller_module("extra_paths", "cls_module")
 def dict_cls(
     converter=None,  # type: Callable[[Any], VT] | Type[VT] | str | None
     validator=None,  # type: Callable[[Any], None] | str | None
@@ -64,11 +64,6 @@ def dict_cls(
     :param key_relationship_kwargs: Key relationship keyword arguments.
     :return: Dictionary structure class.
     """
-    caller_mod = caller_module.caller_module()
-    extra_paths = tuple(tuple(extra_paths) or (m for m in (caller_mod,) if m))
-    if cls_module is None:
-        cls_module = caller_mod
-
     return cast(
         Type[DictData[KT, VT]],
         estruttura.dict_cls(
@@ -96,6 +91,7 @@ def dict_cls(
     )
 
 
+@estruttura.auto_caller_module("extra_paths", "cls_module")
 def list_cls(
     converter=None,  # type: Callable[[Any], T] | Type[T] | str | None
     validator=None,  # type: Callable[[Any], None] | str | None
@@ -130,11 +126,6 @@ def list_cls(
     :param relationship_kwargs: Relationship keyword arguments.
     :return: List structure class.
     """
-    caller_mod = caller_module.caller_module()
-    extra_paths = tuple(tuple(extra_paths) or (m for m in (caller_mod,) if m))
-    if cls_module is None:
-        cls_module = caller_mod
-
     return cast(
         Type[ListData[T]],
         estruttura.list_cls(
@@ -155,6 +146,7 @@ def list_cls(
     )
 
 
+@estruttura.auto_caller_module("extra_paths", "cls_module")
 def set_cls(
     converter=None,  # type: Callable[[Any], T] | Type[T] | str | None
     validator=None,  # type: Callable[[Any], None] | str | None
@@ -189,11 +181,6 @@ def set_cls(
     :param relationship_kwargs: Relationship keyword arguments.
     :return: Set structure class.
     """
-    caller_mod = caller_module.caller_module()
-    extra_paths = tuple(tuple(extra_paths) or (m for m in (caller_mod,) if m))
-    if cls_module is None:
-        cls_module = caller_mod
-
     return cast(
         Type[SetData[T]],
         estruttura.set_cls(
@@ -214,6 +201,7 @@ def set_cls(
     )
 
 
+@estruttura.auto_caller_module("extra_paths")
 def attribute(
     default=MISSING,  # type: T | MissingType
     factory=MISSING,  # type: Callable[..., T] | str | MissingType
@@ -282,9 +270,6 @@ def attribute(
     :param relationship_kwargs: Relationship keyword arguments.
     :return: Attribute.
     """
-    caller_mod = caller_module.caller_module()
-    extra_paths = tuple(tuple(extra_paths) or (m for m in (caller_mod,) if m))
-
     return cast(
         T,
         estruttura.attribute(
@@ -322,6 +307,7 @@ def attribute(
     )
 
 
+@estruttura.auto_caller_module("extra_paths", "cls_module")
 def dict_attribute(
     default=MISSING,  # type: Mapping[KT, VT] | MissingType
     factory=MISSING,  # type: Callable[..., Mapping[KT, VT]] | str | MissingType
@@ -364,11 +350,6 @@ def dict_attribute(
     key_relationship_kwargs=None,  # type: Mapping[str, Any] | None
 ):
     # type: (...) -> DictData[KT, VT]
-    caller_mod = caller_module.caller_module()
-    extra_paths = tuple(tuple(extra_paths) or (m for m in (caller_mod,) if m))
-    if cls_module is None:
-        cls_module = caller_mod
-
     return cast(
         DictData[KT, VT],
         estruttura.dict_attribute(
@@ -415,6 +396,7 @@ def dict_attribute(
     )
 
 
+@estruttura.auto_caller_module("extra_paths", "cls_module")
 def list_attribute(
     default=MISSING,  # type: Iterable[T] | MissingType
     factory=MISSING,  # type: Callable[..., Iterable[T]] | str | MissingType
@@ -450,11 +432,6 @@ def list_attribute(
     relationship_kwargs=None,  # type: Mapping[str, Any] | None
 ):
     # type: (...) -> ListData[T]
-    caller_mod = caller_module.caller_module()
-    extra_paths = tuple(tuple(extra_paths) or (m for m in (caller_mod,) if m))
-    if cls_module is None:
-        cls_module = caller_mod
-
     return cast(
         ListData[T],
         estruttura.list_attribute(
@@ -494,6 +471,7 @@ def list_attribute(
     )
 
 
+@estruttura.auto_caller_module("extra_paths", "cls_module")
 def set_attribute(
     default=MISSING,  # type: Iterable[T] | MissingType
     factory=MISSING,  # type: Callable[..., Iterable[T]] | str | MissingType
@@ -529,11 +507,6 @@ def set_attribute(
     relationship_kwargs=None,  # type: Mapping[str, Any] | None
 ):
     # type: (...) -> SetData[T]
-    caller_mod = caller_module.caller_module()
-    extra_paths = tuple(tuple(extra_paths) or (m for m in (caller_mod,) if m))
-    if cls_module is None:
-        cls_module = caller_mod
-
     return cast(
         SetData[T],
         estruttura.set_attribute(

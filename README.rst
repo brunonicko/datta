@@ -36,10 +36,10 @@
 
 Overview
 --------
-`Datta` is a simple implementation of Slotted Data Classes compatible with Python 2.7 and 3.7+.
+Immutable data structures based on `estruttura <https://github.com/brunonicko/estruttura>`_.
 
-Example
--------
+Examples
+--------
 
 .. code:: python
 
@@ -48,4 +48,36 @@ Example
     ...     x = attribute(types=int)
     ...     y = attribute(types=int)
     ...
-    >>> point = Point(3, 4)
+    >>> point_a = Point(3, 4)
+    >>> point_a
+    Point(3, 4)
+    >>> point_b = point_a.update(x=30, y=40)
+    >>> point_b
+    Point(30, 40)
+
+.. code:: python
+
+    >>> from datta import Data, attribute, list_attribute
+    >>> from tippo import Literal
+    >>> class Vehicle(Data):
+    ...     kind = attribute(types=str)
+    ...
+    >>> class Garage(Data):
+    ...     vehicles = list_attribute(types=Vehicle)
+    ...     gate = attribute(default="automatic", types=str)  # type: Literal["automatic", "manual"]
+    ...
+    >>> garage = Garage([Vehicle("bicycle"), Vehicle("car")], gate="manual")
+    >>> garage
+    Garage([Vehicle('bicycle'), Vehicle('car')], gate='manual')
+    >>> garage.serialize() == {"vehicles": [{"kind": "bicycle"}, {"kind": "car"}], "gate": "manual"}
+    True
+    >>> Garage.deserialize({"vehicles": [{"kind": "bicycle"}, {"kind": "car"}], "gate": "manual"}) == garage
+    True
+
+.. code:: python
+
+    >>> from datta import list_cls
+    >>> MyStrList = list_cls(converter=str, qualified_name="MyStrList")
+    >>> my_str_list = MyStrList([1, 2.2, None, True])
+    >>> my_str_list
+    MyStrList(['1', '2.2', 'None', 'True'])

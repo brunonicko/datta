@@ -14,7 +14,7 @@ Documentation
 .. toctree::
    :maxdepth: 3
 
-   api/estruttura
+   api/datta
 
 Indices and Tables
 ==================
