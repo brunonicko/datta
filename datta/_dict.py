@@ -8,6 +8,7 @@ from tippo import Iterator, Type, TypeVar
 
 from ._bases import DataCollection, PrivateDataCollection
 from ._constants import DeletedType
+from ._relationship import Relationship
 
 KT = TypeVar("KT")
 VT = TypeVar("VT")
@@ -17,6 +18,8 @@ class PrivateDictData(PrivateDataCollection[KT], ImmutableDictStructure[KT, VT])
     """Private dictionary data."""
 
     __slots__ = ("_state",)
+
+    value_relationship = Relationship()  # type: Relationship[VT]
 
     def __iter__(self):
         # type: () -> Iterator[KT]

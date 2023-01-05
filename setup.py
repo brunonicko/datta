@@ -24,7 +24,7 @@ with open("requirements.txt", "r") as fh:
 
 setuptools.setup(
     name="datta",
-    version="0.1.0",
+    version="1.0.0",
     author="Bruno Nicko",
     author_email="brunonicko@gmail.com",
     description="Implementation of Slotted Data Classes compatible with Python 2.7 and 3.7+.",

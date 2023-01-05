@@ -8,6 +8,8 @@ from estruttura import (
 )
 from tippo import TypeVar
 
+from ._relationship import Relationship
+
 T_co = TypeVar("T_co", covariant=True)
 
 
@@ -34,6 +36,8 @@ class PrivateDataCollection(BasePrivateData, BaseImmutableCollectionStructure[T_
     """Private data collection."""
 
     __slots__ = ()
+
+    relationship = Relationship()  # type: Relationship[T_co]
 
 
 # noinspection PyAbstractClass
