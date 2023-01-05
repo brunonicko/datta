@@ -60,7 +60,7 @@ class PrivateSetData(PrivateDataCollection[T], ImmutableSetStructure[T]):
         :param other: Another object.
         :return: True if equal.
         """
-        if isinstance(other, dict):
+        if isinstance(other, set):
             return self._state == other
         else:
             return isinstance(other, type(self)) and self._state == other._state
