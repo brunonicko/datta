@@ -70,7 +70,7 @@ class PrivateListData(PrivateDataCollection[T], ImmutableListStructure[T]):
         :param other: Another object.
         :return: True if equal.
         """
-        if isinstance(other, dict):
+        if isinstance(other, list):
             return self._state == other
         else:
             return isinstance(other, type(self)) and self._state == other._state
@@ -130,7 +130,7 @@ class PrivateListData(PrivateDataCollection[T], ImmutableListStructure[T]):
             raise TypeError(error)
 
 
-PLD = TypeVar("PLD", bound=PrivateListData)  # private dictionary data self type
+PLD = TypeVar("PLD", bound=PrivateListData)  # private list data self type
 
 
 class ListData(PrivateListData[T], DataCollection[T], UserImmutableListStructure[T]):
@@ -214,4 +214,4 @@ class ListData(PrivateListData[T], DataCollection[T], UserImmutableListStructure
         return new_self
 
 
-LD = TypeVar("LD", bound=ListData)  # dictionary data self type
+LD = TypeVar("LD", bound=ListData)  # list data self type
