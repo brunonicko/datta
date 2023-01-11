@@ -1,6 +1,5 @@
 from estruttura.exceptions import (
     ConversionError,
-    EstrutturaException,
     InvalidTypeError,
     ProcessingError,
     SerializationError,
@@ -8,7 +7,6 @@ from estruttura.exceptions import (
 )
 
 __all__ = [
-    "EstrutturaException",
     "ProcessingError",
     "ConversionError",
     "ValidationError",

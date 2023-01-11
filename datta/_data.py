@@ -58,27 +58,6 @@ class PrivateData(six.with_metaclass(DataMeta, BasePrivateData, ImmutableStructu
         obj_state.update_state(new_self, obj_state.get_state(self))
         return new_self
 
-    def __getitem__(self, name):
-        # type: (str) -> Any
-        """
-        Get value for attribute.
-
-        :param name: Attribute name.
-        :return: Attribute value.
-        :raises KeyError: Attribute does not exist or has no value.
-        """
-        return getattr(self, name)
-
-    def __contains__(self, name):
-        # type: (object) -> bool
-        """
-        Get whether there's a value for attribute.
-
-        :param name: Attribute name.
-        :return: True if has value.
-        """
-        return isinstance(name, six.string_types) and name in type(self).__attribute_map__ and hasattr(self, name)
-
     def __setattr__(self, name, value):
         # type: (str, Any) -> None
         """
@@ -103,6 +82,27 @@ class PrivateData(six.with_metaclass(DataMeta, BasePrivateData, ImmutableStructu
             error = "{!r} objects are immutable".format(type(self).__name__)
             raise AttributeError(error)
         super(PrivateData, self).__delattr__(name)
+
+    def _get(self, name):
+        # type: (str) -> Any
+        """
+        Get value for attribute.
+
+        :param name: Attribute name.
+        :return: Attribute value.
+        :raises KeyError: Attribute does not exist or has no value.
+        """
+        return getattr(self, name)
+
+    def _contains(self, name):
+        # type: (object) -> bool
+        """
+        Get whether there's a value for attribute.
+
+        :param name: Attribute name.
+        :return: True if has value.
+        """
+        return isinstance(name, six.string_types) and name in type(self).__attribute_map__ and hasattr(self, name)
 
     def _do_init(self, initial_values):
         # type: (mapping_proxy.MappingProxyType[str, Any]) -> None

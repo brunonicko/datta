@@ -1,4 +1,5 @@
 import estruttura
+from basicco.caller_module import auto_caller_module
 from basicco.namespace import Namespace
 from tippo import Any, Callable, Iterable, Mapping, Type, TypeVar, cast
 
@@ -15,22 +16,22 @@ KT = TypeVar("KT")
 VT = TypeVar("VT")
 
 
-@estruttura.auto_caller_module("extra_paths", "cls_module")
+@auto_caller_module("extra_paths", "cls_module")
 def dict_cls(
     converter=None,  # type: Callable[[Any], VT] | Type[VT] | str | None
-    validator=None,  # type: Callable[[Any], None] | str | None
+    validator=None,  # type: Callable[[Any], Any] | str | None
     types=(),  # type: Iterable[Type[VT] | str | None] | Type[VT] | str | None
     subtypes=False,  # type: bool
     serializer=TypedSerializer(),  # type: Serializer[VT] | None
     key_converter=None,  # type: Callable[[Any], KT] | Type[KT] | str | None
-    key_validator=None,  # type: Callable[[Any], None] | str | None
+    key_validator=None,  # type: Callable[[Any], Any] | str | None
     key_types=(),  # type: Iterable[Type[KT] | str | None] | Type[KT] | str | None
     key_subtypes=False,  # type: bool
     key_serializer=TypedSerializer(),  # type: Serializer[KT] | None
     extra_paths=(),  # type: Iterable[str]
     builtin_paths=None,  # type: Iterable[str] | None
     qualified_name=None,  # type: str | None
-    dict_type=DictData,  # type: Type[DictData[KT, VT]]
+    base_type=DictData,  # type: Type[DictData[KT, VT]]
     cls_dct=None,  # type: Mapping[str, Any] | None
     cls_module=None,  # type: str | None
     relationship_type=Relationship,  # type: Type[Relationship[VT]]
@@ -55,7 +56,7 @@ def dict_cls(
     :param extra_paths: Extra module paths in fallback order.
     :param builtin_paths: Builtin module paths in fallback order.
     :param qualified_name: Qualified name.
-    :param dict_type: Base class.
+    :param base_type: Base class.
     :param cls_dct: Class body.
     :param cls_module: Class module.
     :param relationship_type: Value relationship class.
@@ -80,7 +81,7 @@ def dict_cls(
             extra_paths=extra_paths,
             builtin_paths=builtin_paths,
             qualified_name=qualified_name,
-            dict_type=dict_type,
+            base_type=base_type,
             cls_dct=cls_dct,
             cls_module=cls_module,
             relationship_type=relationship_type,
@@ -91,17 +92,17 @@ def dict_cls(
     )
 
 
-@estruttura.auto_caller_module("extra_paths", "cls_module")
+@auto_caller_module("extra_paths", "cls_module")
 def list_cls(
     converter=None,  # type: Callable[[Any], T] | Type[T] | str | None
-    validator=None,  # type: Callable[[Any], None] | str | None
+    validator=None,  # type: Callable[[Any], Any] | str | None
     types=(),  # type: Iterable[Type[T] | str | None] | Type[T] | str | None
     subtypes=False,  # type: bool
     serializer=TypedSerializer(),  # type: Serializer[T] | None
     extra_paths=(),  # type: Iterable[str]
     builtin_paths=None,  # type: Iterable[str] | None
     qualified_name=None,  # type: str | None
-    list_type=ListData,  # type: Type[ListData[T]]
+    base_type=ListData,  # type: Type[ListData[T]]
     cls_dct=None,  # type: Mapping[str, Any] | None
     cls_module=None,  # type: str | None
     relationship_type=Relationship,  # type: Type[Relationship[T]]
@@ -119,7 +120,7 @@ def list_cls(
     :param extra_paths: Extra module paths in fallback order.
     :param builtin_paths: Builtin module paths in fallback order.
     :param qualified_name: Qualified name.
-    :param list_type: Base class.
+    :param base_type: Base class.
     :param cls_dct: Class body.
     :param cls_module: Class module.
     :param relationship_type: Relationship class.
@@ -137,7 +138,7 @@ def list_cls(
             extra_paths=extra_paths,
             builtin_paths=builtin_paths,
             qualified_name=qualified_name,
-            list_type=list_type,
+            base_type=base_type,
             cls_dct=cls_dct,
             cls_module=cls_module,
             relationship_type=relationship_type,
@@ -146,17 +147,17 @@ def list_cls(
     )
 
 
-@estruttura.auto_caller_module("extra_paths", "cls_module")
+@auto_caller_module("extra_paths", "cls_module")
 def set_cls(
     converter=None,  # type: Callable[[Any], T] | Type[T] | str | None
-    validator=None,  # type: Callable[[Any], None] | str | None
+    validator=None,  # type: Callable[[Any], Any] | str | None
     types=(),  # type: Iterable[Type[T] | str | None] | Type[T] | str | None
     subtypes=False,  # type: bool
     serializer=TypedSerializer(),  # type: Serializer[T] | None
     extra_paths=(),  # type: Iterable[str]
     builtin_paths=None,  # type: Iterable[str] | None
     qualified_name=None,  # type: str | None
-    set_type=SetData,  # type: Type[SetData[T]]
+    base_type=SetData,  # type: Type[SetData[T]]
     cls_dct=None,  # type: Mapping[str, Any] | None
     cls_module=None,  # type: str | None
     relationship_type=Relationship,  # type: Type[Relationship[T]]
@@ -174,7 +175,7 @@ def set_cls(
     :param extra_paths: Extra module paths in fallback order.
     :param builtin_paths: Builtin module paths in fallback order.
     :param qualified_name: Qualified name.
-    :param set_type: Base class.
+    :param base_type: Base class.
     :param cls_dct: Class body.
     :param cls_module: Class module.
     :param relationship_type: Relationship class.
@@ -192,7 +193,7 @@ def set_cls(
             extra_paths=extra_paths,
             builtin_paths=builtin_paths,
             qualified_name=qualified_name,
-            set_type=set_type,
+            base_type=base_type,
             cls_dct=cls_dct,
             cls_module=cls_module,
             relationship_type=relationship_type,
@@ -201,12 +202,12 @@ def set_cls(
     )
 
 
-@estruttura.auto_caller_module("extra_paths")
+@auto_caller_module("extra_paths")
 def attribute(
     default=MISSING,  # type: T | MissingType
     factory=MISSING,  # type: Callable[..., T] | str | MissingType
     converter=None,  # type: Callable[[Any], T] | Type[T] | str | None
-    validator=None,  # type: Callable[[Any], None] | str | None
+    validator=None,  # type: Callable[[Any], Any] | str | None
     types=(),  # type: Iterable[Type[T] | str | None] | Type[T] | str | None
     subtypes=False,  # type: bool
     serializer=TypedSerializer(),  # type: Serializer[T] | None
@@ -307,17 +308,17 @@ def attribute(
     )
 
 
-@estruttura.auto_caller_module("extra_paths", "cls_module")
+@auto_caller_module("extra_paths", "cls_module")
 def dict_attribute(
     default=MISSING,  # type: Mapping[KT, VT] | MissingType
     factory=MISSING,  # type: Callable[..., Mapping[KT, VT]] | str | MissingType
     converter=None,  # type: Callable[[Any], VT] | Type[VT] | str | None
-    validator=None,  # type: Callable[[Any], None] | str | None
+    validator=None,  # type: Callable[[Any], Any] | str | None
     types=(),  # type: Iterable[Type[VT] | str | None] | Type[VT] | str | None
     subtypes=False,  # type: bool
     serializer=TypedSerializer(),  # type: Serializer[VT] | None
     key_converter=None,  # type: Callable[[Any], KT] | Type[KT] | str | None
-    key_validator=None,  # type: Callable[[Any], None] | str | None
+    key_validator=None,  # type: Callable[[Any], Any] | str | None
     key_types=(),  # type: Iterable[Type[KT] | str | None] | Type[KT] | str | None
     key_subtypes=False,  # type: bool
     key_serializer=TypedSerializer(),  # type: Serializer[KT] | None
@@ -341,7 +342,7 @@ def dict_attribute(
     builtin_paths=None,  # type: Iterable[str] | None
     attribute_type=Attribute,  # type: Type[Attribute[DictData[KT, VT]]]
     attribute_kwargs=None,  # type: Mapping[str, Any] | None
-    dict_type=DictData,  # type: Type[DictData[KT, VT]]
+    base_type=DictData,  # type: Type[DictData[KT, VT]]
     cls_dct=None,  # type: Mapping[str, Any] | None
     cls_module=None,  # type: str | None
     relationship_type=Relationship,  # type: Type[Relationship[VT]]
@@ -385,7 +386,7 @@ def dict_attribute(
             builtin_paths=builtin_paths,
             attribute_type=attribute_type,
             attribute_kwargs=attribute_kwargs,
-            dict_type=dict_type,
+            base_type=base_type,
             cls_dct=cls_dct,
             cls_module=cls_module,
             relationship_type=relationship_type,
@@ -396,12 +397,12 @@ def dict_attribute(
     )
 
 
-@estruttura.auto_caller_module("extra_paths", "cls_module")
+@auto_caller_module("extra_paths", "cls_module")
 def list_attribute(
     default=MISSING,  # type: Iterable[T] | MissingType
     factory=MISSING,  # type: Callable[..., Iterable[T]] | str | MissingType
     converter=None,  # type: Callable[[Any], T] | Type[T] | str | None
-    validator=None,  # type: Callable[[Any], None] | str | None
+    validator=None,  # type: Callable[[Any], Any] | str | None
     types=(),  # type: Iterable[Type[T] | str | None] | Type[T] | str | None
     subtypes=False,  # type: bool
     serializer=TypedSerializer(),  # type: Serializer[T] | None
@@ -425,7 +426,7 @@ def list_attribute(
     builtin_paths=None,  # type: Iterable[str] | None
     attribute_type=Attribute,  # type: Type[Attribute[ListData[T]]]
     attribute_kwargs=None,  # type: Mapping[str, Any] | None
-    list_type=ListData,  # type: Type[ListData[T]]
+    base_type=ListData,  # type: Type[ListData[T]]
     cls_dct=None,  # type: Mapping[str, Any] | None
     cls_module=None,  # type: str | None
     relationship_type=Relationship,  # type: Type[Relationship[T]]
@@ -462,7 +463,7 @@ def list_attribute(
             builtin_paths=builtin_paths,
             attribute_type=attribute_type,
             attribute_kwargs=attribute_kwargs,
-            list_type=list_type,
+            base_type=base_type,
             cls_dct=cls_dct,
             cls_module=cls_module,
             relationship_type=relationship_type,
@@ -471,12 +472,12 @@ def list_attribute(
     )
 
 
-@estruttura.auto_caller_module("extra_paths", "cls_module")
+@auto_caller_module("extra_paths", "cls_module")
 def set_attribute(
     default=MISSING,  # type: Iterable[T] | MissingType
     factory=MISSING,  # type: Callable[..., Iterable[T]] | str | MissingType
     converter=None,  # type: Callable[[Any], T] | Type[T] | str | None
-    validator=None,  # type: Callable[[Any], None] | str | None
+    validator=None,  # type: Callable[[Any], Any] | str | None
     types=(),  # type: Iterable[Type[T] | str | None] | Type[T] | str | None
     subtypes=False,  # type: bool
     serializer=TypedSerializer(),  # type: Serializer[T] | None
@@ -500,7 +501,7 @@ def set_attribute(
     builtin_paths=None,  # type: Iterable[str] | None
     attribute_type=Attribute,  # type: Type[Attribute[SetData[T]]]
     attribute_kwargs=None,  # type: Mapping[str, Any] | None
-    set_type=SetData,  # type: Type[SetData[T]]
+    base_type=SetData,  # type: Type[SetData[T]]
     cls_dct=None,  # type: Mapping[str, Any] | None
     cls_module=None,  # type: str | None
     relationship_type=Relationship,  # type: Type[Relationship[T]]
@@ -537,7 +538,7 @@ def set_attribute(
             builtin_paths=builtin_paths,
             attribute_type=attribute_type,
             attribute_kwargs=attribute_kwargs,
-            set_type=set_type,
+            base_type=base_type,
             cls_dct=cls_dct,
             cls_module=cls_module,
             relationship_type=relationship_type,

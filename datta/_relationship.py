@@ -17,7 +17,7 @@ class Relationship(estruttura.Relationship[T]):
     def __init__(
         self,
         converter=None,  # type: Callable[[Any], T] | Type[T] | str | None
-        validator=None,  # type: Callable[[Any], None] | str | None
+        validator=None,  # type: Callable[[Any], Any] | str | None
         types=(),  # type: Iterable[Type[T] | str | None] | Type[T] | str | None
         subtypes=False,  # type: bool
         serializer=TypedSerializer(),  # type: Serializer[T] | None
