@@ -1,5 +1,3 @@
-import copy
-
 from basicco import mapping_proxy
 from estruttura import ImmutableDictStructure, UserImmutableDictStructure
 from pyrsistent import pmap
@@ -50,28 +48,6 @@ class PrivateDictData(PrivateDataCollection[KT], ImmutableDictStructure[KT, VT])
         """
         return self._state[key]
 
-    def _hash(self):
-        # type: () -> int
-        """
-        Get hash.
-
-        :return: Hash.
-        """
-        return hash(self._state)
-
-    def _eq(self, other):
-        # type: (object) -> bool
-        """
-        Compare for equality.
-
-        :param other: Another object.
-        :return: True if equal.
-        """
-        if isinstance(other, dict):
-            return self._state == other
-        else:
-            return isinstance(other, type(self)) and self._state == other._state
-
     def _do_init(self, initial_values):
         # type: (mapping_proxy.MappingProxyType[KT, VT]) -> None
         """
@@ -104,8 +80,11 @@ class DictData(PrivateDictData[KT, VT], DataCollection[KT], UserImmutableDictStr
 
     __slots__ = ()
 
+    def _do_clear(self):
+        self._state = pmap()
+
     def _do_update(
-        self,  # type: DD
+        self,
         inserts,  # type: mapping_proxy.MappingProxyType[KT, VT]
         deletes,  # type: mapping_proxy.MappingProxyType[KT, VT]
         updates_old,  # type: mapping_proxy.MappingProxyType[KT, VT]
@@ -113,7 +92,7 @@ class DictData(PrivateDictData[KT, VT], DataCollection[KT], UserImmutableDictStr
         updates_and_inserts,  # type: mapping_proxy.MappingProxyType[KT, VT]
         all_updates,  # type: mapping_proxy.MappingProxyType[KT, VT | DeletedType]
     ):
-        # type: (...) -> DD
+        # type: (...) -> None
         """
         Update keys and values (internal).
 
@@ -130,9 +109,4 @@ class DictData(PrivateDictData[KT, VT], DataCollection[KT], UserImmutableDictStr
             for key in deletes:
                 del new_state_evolver[key]
             new_state = new_state_evolver.persistent()
-        new_self = copy.copy(self)
-        new_self._state = new_state
-        return new_self
-
-
-DD = TypeVar("DD", bound=DictData)  # dictionary data self type
+        self._state = new_state

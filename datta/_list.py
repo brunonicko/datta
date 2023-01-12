@@ -1,4 +1,3 @@
-import copy
 import itertools
 
 from estruttura import ImmutableListStructure, UserImmutableListStructure
@@ -52,28 +51,6 @@ class PrivateListData(PrivateDataCollection[T], ImmutableListStructure[T]):
         :return: Value/values.
         """
         return self._state[item]
-
-    def _hash(self):
-        # type: () -> int
-        """
-        Get hash.
-
-        :return: Hash.
-        """
-        return hash(self._state)
-
-    def _eq(self, other):
-        # type: (object) -> bool
-        """
-        Compare for equality.
-
-        :param other: Another object.
-        :return: True if equal.
-        """
-        if isinstance(other, list):
-            return self._state == other
-        else:
-            return isinstance(other, type(self)) and self._state == other._state
 
     def _do_init(self, initial_values):
         # type: (tuple[T, ...]) -> None
@@ -138,8 +115,11 @@ class ListData(PrivateListData[T], DataCollection[T], UserImmutableListStructure
 
     __slots__ = ()
 
+    def _do_clear(self):
+        self._state = pvector()
+
     def _do_update(self, index, stop, old_values, new_values):
-        # type: (LD, int, int, tuple[T, ...], tuple[T, ...]) -> LD
+        # type: (int, int, tuple[T, ...], tuple[T, ...]) -> None
         """
         Update value(s) (internal).
 
@@ -151,12 +131,10 @@ class ListData(PrivateListData[T], DataCollection[T], UserImmutableListStructure
         """
         pairs = itertools.chain.from_iterable(zip(range(index, stop), new_values))
         new_state = self._state.mset(*pairs)  # type: ignore
-        new_self = copy.copy(self)
-        new_self._state = new_state
-        return new_self
+        self._state = new_state
 
     def _do_insert(self, index, new_values):
-        # type: (LD, int, tuple[T, ...]) -> LD
+        # type: (int, tuple[T, ...]) -> None
         """
         Insert value(s) at index (internal).
 
@@ -170,12 +148,10 @@ class ListData(PrivateListData[T], DataCollection[T], UserImmutableListStructure
             new_state = pvector(new_values) + self._state
         else:
             new_state = self._state[:index] + pvector(new_values) + self._state[index:]
-        new_self = copy.copy(self)
-        new_self._state = new_state
-        return new_self
+        self._state = new_state
 
     def _do_move(self, target_index, index, stop, post_index, post_stop, values):
-        # type: (LD, int, int, int, int, int, tuple[T, ...]) -> LD
+        # type: (int, int, int, int, int, tuple[T, ...]) -> None
         """
         Move values internally (internal).
 
@@ -194,12 +170,10 @@ class ListData(PrivateListData[T], DataCollection[T], UserImmutableListStructure
             new_state = pvector(values) + state
         else:
             new_state = state[:post_index] + pvector(values) + state[post_index:]
-        new_self = copy.copy(self)
-        new_self._state = new_state
-        return new_self
+        self._state = new_state
 
     def _do_delete(self, index, stop, old_values):
-        # type: (LD, int, int, tuple[T, ...]) -> LD
+        # type: (int, int, tuple[T, ...]) -> None
         """
         Delete values at index/slice (internal).
 
@@ -208,10 +182,4 @@ class ListData(PrivateListData[T], DataCollection[T], UserImmutableListStructure
         :param old_values: Values being deleted.
         :return: Transformed (immutable) or self (mutable).
         """
-        new_state = self._state.delete(index, stop)
-        new_self = copy.copy(self)
-        new_self._state = new_state
-        return new_self
-
-
-LD = TypeVar("LD", bound=ListData)  # list data self type
+        self._state = self._state.delete(index, stop)

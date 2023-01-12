@@ -1,4 +1,7 @@
+import copy
+
 import six
+from basicco.runtime_final import final
 from estruttura import (
     BaseImmutableCollectionStructure,
     BaseImmutableStructure,
@@ -21,14 +24,30 @@ class BaseDataMeta(BaseStructureMeta):
 class BasePrivateData(six.with_metaclass(BaseDataMeta, BaseImmutableStructure)):
     """Base private data."""
 
-    __slots__ = ()
+    __slots__ = ("__hash",)
+
+    @final
+    def __cache_hash__(self, hash_):
+        self.__hash = hash_
+
+    @final
+    def __retrieve_hash__(self):
+        try:
+            return self.__hash
+        except AttributeError:
+            self.__hash = None
+            return None
+
+    @final
+    def _do_copy(self):
+        return copy.copy(self)
 
 
 # noinspection PyAbstractClass
 class BaseData(BasePrivateData, BaseUserImmutableStructure):
     """Base data."""
 
-    __slots__ = ()
+    __slots__ = ("__hash",)
 
 
 # noinspection PyAbstractClass
@@ -45,6 +64,3 @@ class DataCollection(PrivateDataCollection[T_co], BaseUserImmutableCollectionStr
     """Base data collection."""
 
     __slots__ = ()
-
-    def _do_clear(self):
-        return type(self)()

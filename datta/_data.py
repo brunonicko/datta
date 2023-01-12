@@ -1,5 +1,3 @@
-import copy
-
 import six
 from basicco import mangling, mapping_proxy, obj_state
 from estruttura import ImmutableStructure, StructureMeta, UserImmutableStructure
@@ -138,7 +136,7 @@ class Data(PrivateData, BaseData, UserImmutableStructure):
     __slots__ = ()
 
     def _do_update(
-        self,  # type: D
+        self,
         inserts,  # type: mapping_proxy.MappingProxyType[str, Any]
         deletes,  # type: mapping_proxy.MappingProxyType[str, Any]
         updates_old,  # type: mapping_proxy.MappingProxyType[str, Any]
@@ -146,7 +144,7 @@ class Data(PrivateData, BaseData, UserImmutableStructure):
         updates_and_inserts,  # type: mapping_proxy.MappingProxyType[str, Any]
         all_updates,  # type: mapping_proxy.MappingProxyType[str, Any]
     ):
-        # type: (...) -> D
+        # type: (...) -> None
         """
         Update attribute values (internal).
 
@@ -158,11 +156,6 @@ class Data(PrivateData, BaseData, UserImmutableStructure):
         :param all_updates: All updates.
         :return: Transformed (immutable) or self (mutable).
         """
-        new_self = copy.copy(self)
-        new_self._do_init(updates_and_inserts)
+        self._do_init(updates_and_inserts)
         for name, _ in six.iteritems(deletes):
             object.__delattr__(self, name)
-        return new_self
-
-
-D = TypeVar("D", bound=Data)  # data self type

@@ -1,5 +1,4 @@
-import copy
-
+from basicco.runtime_final import final
 from estruttura import ImmutableSetStructure, UserImmutableSetStructure
 from pyrsistent import pset
 from pyrsistent.typing import PSet
@@ -42,28 +41,6 @@ class PrivateSetData(PrivateDataCollection[T], ImmutableSetStructure[T]):
         :return: True if contains.
         """
         return value in self._state
-
-    def _hash(self):
-        # type: () -> int
-        """
-        Get hash.
-
-        :return: Hash.
-        """
-        return hash(self._state)
-
-    def _eq(self, other):
-        # type: (object) -> bool
-        """
-        Compare for equality.
-
-        :param other: Another object.
-        :return: True if equal.
-        """
-        if isinstance(other, set):
-            return self._state == other
-        else:
-            return isinstance(other, type(self)) and self._state == other._state
 
     def _do_init(self, initial_values):
         # type: (frozenset[T]) -> None
@@ -177,8 +154,13 @@ class SetData(PrivateSetData[T], DataCollection[T], UserImmutableSetStructure[T]
 
     __slots__ = ()
 
+    @final
+    def _do_clear(self):
+        self._state = pset()
+
+    @final
     def _do_remove(self, old_values):
-        # type: (SD, frozenset[T]) -> SD
+        # type: (frozenset[T]) -> None
         """
         Remove values (internal).
 
@@ -186,12 +168,11 @@ class SetData(PrivateSetData[T], DataCollection[T], UserImmutableSetStructure[T]
         :return: Transformed (immutable) or self (mutable).
         """
         new_state = self._state.difference(old_values)
-        new_self = copy.copy(self)
-        new_self._state = new_state
-        return new_self
+        self._state = new_state
 
+    @final
     def _do_update(self, new_values):
-        # type: (SD, frozenset[T]) -> SD
+        # type: (frozenset[T]) -> None
         """
         Add values (internal).
 
@@ -199,9 +180,4 @@ class SetData(PrivateSetData[T], DataCollection[T], UserImmutableSetStructure[T]
         :return: Transformed (immutable) or self (mutable).
         """
         new_state = self._state.update(new_values)
-        new_self = copy.copy(self)
-        new_self._state = new_state
-        return new_self
-
-
-SD = TypeVar("SD", bound=SetData)  # set data self type
+        self._state = new_state
